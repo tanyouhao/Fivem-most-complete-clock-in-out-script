@@ -122,19 +122,24 @@ RegisterCommand(Config.AdminCommand, function(source, args, rawCommand)
         local count = tonumber(args[1]) or Config.AdminGiveCount
         local players = ESX.GetExtendedPlayers()
 
+        local given = 0
         for _, targetPlayer in pairs(players) do
-            if targetPlayer.canCarryItem('cny_redpacket', count) then
-                targetPlayer.addInventoryItem('cny_redpacket', count)
-                targetPlayer.showNotification(GetMessage('admin_gave', tostring(count)))
-            else
-                targetPlayer.showNotification(GetMessage('inventory_full'))
+            -- Skip the admin who issued the command
+            if targetPlayer.source ~= source then
+                if targetPlayer.canCarryItem('cny_redpacket', count) then
+                    targetPlayer.addInventoryItem('cny_redpacket', count)
+                    targetPlayer.showNotification(GetMessage('admin_gave', tostring(count)))
+                    given = given + 1
+                else
+                    targetPlayer.showNotification(GetMessage('inventory_full'))
+                end
             end
         end
 
         if source ~= 0 then
-            xPlayer.showNotification('Gave ' .. count .. ' red packet(s) to all players.')
+            xPlayer.showNotification('Gave ' .. count .. ' red packet(s) to ' .. given .. ' player(s).')
         end
-        print(('[cny-redpacket] Admin gave %d red packet(s) to all players'):format(count))
+        print(('[cny-redpacket] Admin gave %d red packet(s) to %d player(s)'):format(count, given))
     else
         if xPlayer then
             xPlayer.showNotification(GetMessage('admin_no_perm'))
@@ -149,19 +154,24 @@ RegisterCommand(Config.AdminCommandGold, function(source, args, rawCommand)
         local count = tonumber(args[1]) or Config.AdminGiveCount
         local players = ESX.GetExtendedPlayers()
 
+        local given = 0
         for _, targetPlayer in pairs(players) do
-            if targetPlayer.canCarryItem('cny_redpacket_gold', count) then
-                targetPlayer.addInventoryItem('cny_redpacket_gold', count)
-                targetPlayer.showNotification(GetMessage('admin_gave', tostring(count)))
-            else
-                targetPlayer.showNotification(GetMessage('inventory_full'))
+            -- Skip the admin who issued the command
+            if targetPlayer.source ~= source then
+                if targetPlayer.canCarryItem('cny_redpacket_gold', count) then
+                    targetPlayer.addInventoryItem('cny_redpacket_gold', count)
+                    targetPlayer.showNotification(GetMessage('admin_gave', tostring(count)))
+                    given = given + 1
+                else
+                    targetPlayer.showNotification(GetMessage('inventory_full'))
+                end
             end
         end
 
         if source ~= 0 then
-            xPlayer.showNotification('Gave ' .. count .. ' golden red packet(s) to all players.')
+            xPlayer.showNotification('Gave ' .. count .. ' golden red packet(s) to ' .. given .. ' player(s).')
         end
-        print(('[cny-redpacket] Admin gave %d golden red packet(s) to all players'):format(count))
+        print(('[cny-redpacket] Admin gave %d golden red packet(s) to %d player(s)'):format(count, given))
     else
         if xPlayer then
             xPlayer.showNotification(GetMessage('admin_no_perm'))
