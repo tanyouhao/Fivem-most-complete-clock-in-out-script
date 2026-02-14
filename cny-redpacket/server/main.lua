@@ -3,9 +3,6 @@ ESX = exports['es_extended']:getSharedObject()
 -- Track cooldowns per player
 local PlayerCooldowns = {}
 
--- Track pending rewards (given after animation finishes)
-local PendingRewards = {}
-
 -- ============================================================
 -- REGISTER ALL RED PACKET USABLE ITEMS
 -- ============================================================
@@ -66,16 +63,6 @@ for _, packet in ipairs(Config.RedPackets) do
             end
         end
 
-        -- Store pending reward — money is given AFTER animation finishes
-        PendingRewards[playerId] = {
-            reward      = reward,
-            isJackpot   = isJackpot,
-            moneyType   = packet.moneyType,
-            bonusItems  = bonusToGive,
-            notification = string.format(packet.notification, tostring(reward)),
-            itemName    = packet.itemName,
-        }
-
         -- Tell client to play the opening animation FIRST (no money given yet)
         TriggerClientEvent('cny-redpacket:client:openPacket', playerId, {
             reward       = reward,
@@ -85,59 +72,49 @@ for _, packet in ipairs(Config.RedPackets) do
             notification = string.format(packet.notification, tostring(reward)),
         })
 
-        print(('[cny-redpacket] %s (ID: %s) opened %s -> $%s%s (pending claim)'):format(
+        -- Wait for animation to finish, THEN give money
+        Citizen.SetTimeout(Config.AnimationDuration, function()
+            -- Re-check player is still online
+            local xP = ESX.GetPlayerFromId(playerId)
+            if not xP then return end
+
+            -- NOW give the money
+            if packet.moneyType == 'bank' then
+                xP.addAccountMoney('bank', reward, 'CNY Red Packet reward')
+            else
+                xP.addMoney(reward, 'CNY Red Packet reward')
+            end
+
+            -- Give bonus items
+            for _, bonus in ipairs(bonusToGive) do
+                if xP.canCarryItem(bonus.name, bonus.count) then
+                    xP.addInventoryItem(bonus.name, bonus.count)
+                end
+            end
+
+            -- Send bonus item notifications
+            for _, bonus in ipairs(bonusToGive) do
+                xP.showNotification(GetMessage('bonus_item', tostring(bonus.count), bonus.name))
+            end
+
+            -- Jackpot announcement
+            if isJackpot then
+                xP.showNotification(GetMessage('jackpot', tostring(reward)))
+                TriggerClientEvent('esx:showNotification', -1,
+                    '~y~[CNY] ~s~' .. xP.getName() .. ' hit the ~r~JACKPOT~s~ and won ~g~$' .. tostring(reward) .. '~s~!'
+                )
+            end
+
+            print(('[cny-redpacket] %s (ID: %s) claimed reward -> $%s%s'):format(
+                xP.getName(), playerId, reward, isJackpot and ' (JACKPOT!)' or ''
+            ))
+        end)
+
+        print(('[cny-redpacket] %s (ID: %s) opened %s -> $%s%s'):format(
             xPlayer.getName(), playerId, packet.itemName, reward, isJackpot and ' (JACKPOT!)' or ''
         ))
     end)
 end
-
--- ============================================================
--- CLAIM REWARD AFTER ANIMATION (triggered by client)
--- ============================================================
-
-RegisterNetEvent('cny-redpacket:server:claimReward')
-AddEventHandler('cny-redpacket:server:claimReward', function()
-    local playerId = source
-    local pending = PendingRewards[playerId]
-    if not pending then return end
-
-    -- Clear pending immediately to prevent double-claim
-    PendingRewards[playerId] = nil
-
-    local xPlayer = ESX.GetPlayerFromId(playerId)
-    if not xPlayer then return end
-
-    -- NOW give the money
-    if pending.moneyType == 'bank' then
-        xPlayer.addAccountMoney('bank', pending.reward, 'CNY Red Packet reward')
-    else
-        xPlayer.addMoney(pending.reward, 'CNY Red Packet reward')
-    end
-
-    -- Give bonus items
-    for _, bonus in ipairs(pending.bonusItems) do
-        if xPlayer.canCarryItem(bonus.name, bonus.count) then
-            xPlayer.addInventoryItem(bonus.name, bonus.count)
-        end
-    end
-
-    -- Send bonus item notifications
-    for _, bonus in ipairs(pending.bonusItems) do
-        xPlayer.showNotification(GetMessage('bonus_item', tostring(bonus.count), bonus.name))
-    end
-
-    -- Jackpot announcement
-    if pending.isJackpot then
-        xPlayer.showNotification(GetMessage('jackpot', tostring(pending.reward)))
-        TriggerClientEvent('esx:showNotification', -1,
-            '~y~[CNY] ~s~' .. xPlayer.getName() .. ' hit the ~r~JACKPOT~s~ and won ~g~$' .. tostring(pending.reward) .. '~s~!'
-        )
-    end
-
-    print(('[cny-redpacket] %s (ID: %s) claimed reward -> $%s%s'):format(
-        xPlayer.getName(), playerId, pending.reward, pending.isJackpot and ' (JACKPOT!)' or ''
-    ))
-end)
 
 -- ============================================================
 -- ADMIN COMMANDS
@@ -224,5 +201,4 @@ end, false)
 AddEventHandler('playerDropped', function()
     local playerId = source
     PlayerCooldowns[playerId] = nil
-    PendingRewards[playerId] = nil
 end)

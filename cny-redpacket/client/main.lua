@@ -26,11 +26,8 @@ AddEventHandler('cny-redpacket:client:openPacket', function(data)
     -- DO NOT set NUI focus — this is what breaks inventory!
     -- We only send a message to the NUI, no focus needed.
 
-    -- After animation finishes: claim reward from server, then show notification
+    -- After animation finishes: show notification and clean up
     Citizen.SetTimeout(Config.AnimationDuration, function()
-        -- Tell server to give the money NOW (after UI animation is done)
-        TriggerServerEvent('cny-redpacket:server:claimReward')
-
         -- Show the reward notification
         ESX.ShowNotification(data.notification)
 
