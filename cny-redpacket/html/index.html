@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNY Red Packet</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Red Packet Container -->
+    <div id="packet-container" class="hidden">
+        <!-- Floating gold coins / confetti -->
+        <div id="particles"></div>
+
+        <!-- The red packet envelope -->
+        <div id="red-packet" class="packet">
+            <div class="packet-front">
+                <div class="packet-decoration">
+                    <div class="gold-circle">
+                        <span class="fu-character">&#31119;</span>
+                    </div>
+                </div>
+                <div class="packet-pattern top-pattern"></div>
+                <div class="packet-pattern bottom-pattern"></div>
+            </div>
+        </div>
+
+        <!-- Reward display -->
+        <div id="reward-display" class="hidden">
+            <div class="reward-text">
+                <span class="reward-label">GONG XI FA CAI!</span>
+                <span id="reward-amount" class="reward-amount">$0</span>
+                <span id="jackpot-text" class="jackpot-text hidden">JACKPOT!</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
